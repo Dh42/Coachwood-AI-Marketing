@@ -1,0 +1,35 @@
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+
+/* Dark mode follows the .dark class on <html>, set by the theme switcher. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+        'Segoe UI Symbol', 'Noto Color Emoji';
+}
+
+[x-cloak] {
+    display: none !important;
+}
+
+/* Dual-handle range: two stacked sliders whose thumbs take the clicks. */
+.range-thumb::-webkit-slider-thumb {
+    @apply pointer-events-auto size-4 cursor-pointer appearance-none rounded-full border-2 border-zinc-900 bg-white dark:border-white dark:bg-zinc-900;
+}
+.range-thumb::-moz-range-thumb {
+    @apply pointer-events-auto size-4 cursor-pointer rounded-full border-2 border-zinc-900 bg-white dark:border-white dark:bg-zinc-900;
+}
+
+/* Long unbroken text (tracking links, JSON, URLs in replies) wraps instead of
+   stretching its column past the edge of the screen. */
+@layer base {
+    pre,
+    .whitespace-pre-wrap,
+    .whitespace-pre-line {
+        overflow-wrap: anywhere;
+    }
+}
+

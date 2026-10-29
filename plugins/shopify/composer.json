@@ -1,0 +1,18 @@
+{
+    "name": "coachwood/plugin-shopify",
+    "description": "Shopify: a brand's product catalogue, read from its store.",
+    "type": "library",
+    "version": "1.0.0",
+    "autoload": {
+        "psr-4": {
+            "Coachwood\\Plugins\\Shopify\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Coachwood\\Plugins\\Shopify\\ShopifyServiceProvider"
+            ]
+        }
+    }
+}

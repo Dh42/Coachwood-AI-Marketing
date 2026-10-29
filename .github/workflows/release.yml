@@ -1,0 +1,79 @@
+# Every push to main is tested; only a commit that passes is copied to the
+# production branch, which is the branch Plesk deploys. A broken push never
+# reaches the server: it stays on main, and production keeps the last good one.
+name: Test and release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      mariadb:
+        image: mariadb:10.11
+        env:
+          MARIADB_ROOT_PASSWORD: root
+          MARIADB_DATABASE: coachwood_marketing_test
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+      redis:
+        image: redis:7
+        ports: ['6379:6379']
+    env:
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_USERNAME: root
+      DB_PASSWORD: root
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
+        with:
+          php-version: '8.4'
+          extensions: pdo_mysql, redis, mbstring, xml, curl, zip, intl, bcmath, gd, exif, fileinfo
+          coverage: none
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Install
+        run: |
+          composer install --no-interaction --no-progress --prefer-dist
+          npm ci --no-audit --no-fund
+          npm run build
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Every PHP file parses
+        run: find app plugins config routes database bootstrap -name '*.php' -print0 | xargs -0 -n 50 php -l > /dev/null
+
+      - name: Code style
+        run: ./vendor/bin/pint --test
+
+      - name: Tests
+        run: ./vendor/bin/pest
+
+  release:
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+
+      # Fast-forward only: production only ever moves to a tested commit on main.
+      - name: Move production to this commit
+        run: git push origin "${GITHUB_SHA}:refs/heads/production"
