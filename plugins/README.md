@@ -5,7 +5,7 @@ Each provider or integration is a self-contained Composer package here (`plugins
 A plugin registers itself with `App\Plugins\PluginRegistry` and says what it can do by implementing the capability interfaces in `App\Plugins\Contracts`:
 
 - `StoreProvider`: a brand's product catalogue (`shopify`).
-- `ImageProvider`: images from a prompt and reference images (`gemini`, `openai`). The plugin provides its starting rows for `image_models` and the call; `App\Images\ImageGenerator` checks a request against the model row and finds the connection before calling it.
+- `ImageProvider`: images from a prompt and reference images (`gemini`, `openai`, `higgsfield`). A provider that queues its calls (Higgsfield) submits, polls and downloads inside `generateImages()`, so the generation job sees one call either way. The plugin provides its starting rows for `image_models` and the call; `App\Images\ImageGenerator` checks a request against the model row and finds the connection before calling it.
 - `LanguageProvider`: the models that plan, write and review (`anthropic`); `App\Llm\LlmManager` finds the plugin by the model's provider in `llm_models`.
 - `BackgroundRemover`: cuts the product out of a store photo, leaving a see-through background (`photoroom`). `App\Catalogue\Cutouts` makes one cut-out per photo an ad would use and keeps it on the disk; the composer and the reviewer use it when the brand kit has no transparent pack shot for the variant.
 - Video comes with its step.

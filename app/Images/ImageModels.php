@@ -89,7 +89,7 @@ class ImageModels
 
         $data = Validator::make($input, [
             'provider' => ['required', Rule::in($providers)],
-            'model' => ['required', 'string', 'max:100', 'regex:/^[a-z0-9][a-z0-9._\-]*$/i',
+            'model' => ['required', 'string', 'max:100', 'regex:~^[a-z0-9][a-z0-9._\-]*(/[a-z0-9][a-z0-9._\-]*)*$~i',
                 Rule::unique('image_models', 'model')->where('provider', $input['provider'] ?? '')->ignore($model?->id)],
             'label' => ['required', 'string', 'max:100'],
             'aspect_ratios' => ['required', 'array', 'min:1'],
@@ -109,7 +109,7 @@ class ImageModels
             'notes' => ['nullable', 'string', 'max:1000'],
         ], [
             'provider.in' => 'Choose one of the installed providers.',
-            'model.regex' => 'The model ID is the provider\'s own, such as gemini-nano-banana-2.1.',
+            'model.regex' => 'The model ID is the provider\'s own, such as gemini-nano-banana-2.1 or ideogram/v4.0.',
             'model.unique' => 'This provider already has that model.',
             'aspect_ratios.required' => 'Tick at least one shape.',
             'aspect_ratios.min' => 'Tick at least one shape.',

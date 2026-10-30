@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "e90e4b1df0883a3627e528130e83be3e",
+    "content-hash": "648055b69f6d2f9df8977350b7bae581",
     "packages": [
         {
             "name": "anthropic-ai/sdk",
@@ -553,6 +553,33 @@
                 }
             },
             "description": "Google Gemini: the Nano Banana image models.",
+            "transport-options": {
+                "symlink": true,
+                "relative": true
+            }
+        },
+        {
+            "name": "coachwood/plugin-higgsfield",
+            "version": "1.0.0",
+            "dist": {
+                "type": "path",
+                "url": "plugins/higgsfield",
+                "reference": "03a3c765f4268a4ddfd4e18b682a04069bdecf74"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Coachwood\\Plugins\\Higgsfield\\HiggsfieldServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Coachwood\\Plugins\\Higgsfield\\": "src/"
+                }
+            },
+            "description": "Higgsfield: Ideogram, Qwen, Grok and Marketing Studio images through one API.",
             "transport-options": {
                 "symlink": true,
                 "relative": true

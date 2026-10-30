@@ -144,7 +144,11 @@ class ImageModel extends Model
         if ($this->hasQualities()) {
             $parts[] = implode(', ', $this->qualities);
         }
-        $parts[] = $this->max_references > 0 ? "up to {$this->max_references} reference images" : 'no reference images';
+        $parts[] = match (true) {
+            $this->max_references > 1 => "up to {$this->max_references} reference images",
+            $this->max_references === 1 => 'one reference image',
+            default => 'no reference images',
+        };
         if ($this->renders_text) {
             $parts[] = 'good text';
         }

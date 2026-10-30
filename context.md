@@ -6,7 +6,7 @@ Newest entries at the top of each section. The **Log** records every change and 
 
 ## Current status
 
-Updated 2026-10-29. Brief reviewed with Lesley in two rounds; decisions below. Committed as "initial code" (2026-10-28), not deployed yet.
+Updated 2026-10-30. Brief reviewed with Lesley in two rounds; decisions below. Committed as "initial code" (2026-10-28), not deployed yet.
 
 - **Phase 1, step 1 (foundation):** built. Laravel 13 app with users, roles, Google sign-in and invitations, brands, the settings registry (platform, brand and user scopes), connections per brand with encrypted secrets, the plugin registry, the LLM manager, the activity log, scheduled tasks, Gmail sending, the app shell and the deploy pipeline.
 - **Step 2a (the catalogue):** built. The Shopify plugin, the brand's product copy with packaging sizes per variant, the Products page, nightly and on-demand reads.
@@ -25,8 +25,9 @@ Updated 2026-10-29. Brief reviewed with Lesley in two rounds; decisions below. C
 - **Step 3j (spend and budgets):** built, not committed. Platform → Spend: what the providers cost by person, brand, provider, kind of work and month, for this month, last month, this year or all time, per brand or every brand; the company's month against its budget with the warning line; each request's estimate against what it cost. Each person's monthly budget is set on Users ("Change" beside their spend this month, or back to the default). Platform admins get a notice and an email once a month when the company passes the warning percentage.
 - **Step 3k (cut-outs):** built, not committed. The Photoroom plugin cuts the product out of each store photo an ad would use (a variant's own photo, or the product's first), once per photo after every store read and from "Make the cut-outs" on Products, kept on the disk and recorded as spend; finished ads and the reviewer use the cut-out when the brand kit has no transparent pack shot for the variant, so the kit's pack shots become the exception rather than a requirement.
 - **Step 3l ("Try it"):** built, not committed. Under every prompt editor, "Try it before saving" runs the text in the editor, unsaved, on a sample through the same code a run uses: the planner on a sample brief (the questions it would ask, or the plan), the images rules by making one small square picture, the copy prompt for one placement, a review prompt on the brand's latest image or ad beside what the saved review gave it, and the changes prompt on a sample change. Each try is spend of kind "try" against a daily test budget per person (a setting, $2).
-- Tests: 328 pass on MariaDB (one runs real Chrome and is skipped where there is none), Pint clean.
-- **Next up:** the first deploy: `docs/deploy.md` and the "Before the first deploy" list below. Phase 1 is otherwise built; what's left is listed as "Not yet" under each decision.
+- **Step 3m (Higgsfield images):** built, not committed. The last provider on the brief's phase 1 list: a Higgsfield plugin with Ideogram 4.0, Qwen Image 3, Grok Imagine 2.0 and Marketing Studio Image (and its 2.5 Flare version, off) on the Models page beside Gemini and OpenAI. Each call is submitted, polled until the image is ready and downloaded at once; reference images are uploaded to Higgsfield first; the cost recorded is Higgsfield's own estimate for that exact call. Checked against the live API with Lesley's key (two images, about 7 cents).
+- Tests: 353 pass on MariaDB (one runs real Chrome and is skipped where there is none), Pint clean.
+- **Next up:** phase 1 is built: every item on the brief's phase 1 list is in. Production is deployed and signed in to (2026-10-30); what's left there is the server items and the set-up in the app under "To do". What's left of phase 1 itself is listed as "Not yet" under each decision. Phase 2 (product accuracy and comparison) is outlined in the brief and not designed yet.
 
 ## To do (Lesley)
 
@@ -36,13 +37,15 @@ Things waiting on Lesley. Tick them off here, or tell Claude, and they're moved 
 - [ ] The first admin: start the app (`php artisan serve`, port 8000), sign in with Google once, then `php artisan users:grant-admin lesley@dh42.com` (or whichever company address you signed in with).
 - [ ] **Shopify custom app per store**, read-only: in Shopify, Settings → Apps and sales channels → Develop apps → Create an app ("Coachwood Marketing"), Configuration → Admin API scopes: `read_products` only, Install, then copy the Admin API access token. In this app: Connections → Add connection → Shopify, the brand, `store.myshopify.com` and the token. Then Settings → Store on the brand: choose it, and press "Read the store now" on Products. The same tokens work in production: the connections are rows in each database, so they're entered again there.
 
+- [ ] A **Higgsfield** connection (Connections → Add connection → Higgsfield, shared by every brand) with the key ID and secret now in `.env`, then delete the two `HIGGSFIELD_API_KEY_*` lines from `.env`: the app reads the connection, not `.env`. Models → "Add any missing starters" adds the Higgsfield models.
+
 **Before the first deploy** (`docs/deploy.md`, "One-time server set-up")
 - [ ] Google Chrome (or Chromium) on the server for the composer, runnable by the web user as `google-chrome` (or set the path under Settings → Generation → Advanced).
-- [ ] Plesk: the site `marketing.biosteel.com` with SSL and the document root at `httpdocs/public`; PHP 8.4 with the listed extensions; the `coachwood_marketing` database and its own user.
-- [ ] `.env` on the server from `.env.example`: production values, `TRUSTED_PROXIES=127.0.0.1,::1`, the Redis prefixes, the Google client, `GOOGLE_REDIRECT_URI` for marketing.biosteel.com, `MAIL_MAILER=gmail_api` with the from address, and `php artisan key:generate` (never the CS app's key).
-- [ ] Google Cloud: add `https://marketing.biosteel.com/settings/email/callback` to the OAuth client's redirect URIs (the sign-in one is already there).
+- [x] Plesk: the site `marketing.biosteel.com` with SSL and the document root at `httpdocs/public`; PHP 8.4 with the listed extensions; the `coachwood_marketing` database and its own user. (Done 2026-10-30.)
+- [x] (Done 2026-10-30; Redis needed its password too.) `.env` on the server from `.env.example`: production values, `TRUSTED_PROXIES=127.0.0.1,::1`, the Redis prefixes, the Google client, `GOOGLE_REDIRECT_URI` for marketing.biosteel.com, `MAIL_MAILER=gmail_api` with the from address, and `php artisan key:generate` (never the CS app's key).
+- [x] Google Cloud: both callbacks on the `tools_oauth` client, sign-in and email (neither was there; the client had the bare domain). Done 2026-10-30.
 - [ ] The cron entry for `schedule:run` and the `coachwood-marketing-horizon` service.
-- [ ] Push to `main`, wait for the GitHub Actions run, then set up Plesk's Git integration on `production` with `bash deploy/plesk-deploy.sh` as the deployment action (and the GitHub webhook). Open `/up`.
+- [x] Push to `main`, wait for the GitHub Actions run, then set up Plesk's Git integration on `production` with `bash deploy/plesk-deploy.sh` as the deployment action (and the GitHub webhook). (Done 2026-10-30; the first run failed on an empty `tests/Unit` folder that git doesn't store, so the Unit suite was dropped from `phpunit.xml`.) Still to check: `/up`.
 - [ ] A DigitalOcean Space and key for the app's files (`docs/deploy.md`, "Files"), with `FILESYSTEM_DISK=s3` in `.env`: the brand kit's files go there.
 
 **After the first deploy**
@@ -51,10 +54,11 @@ Things waiting on Lesley. Tick them off here, or tell Claude, and they're moved 
 - [ ] Settings → Budgets and spend → "Test budget per person per day" ($2 by default): what each person may spend a day on "Try it". Set it to 0 to switch "Try it" off.
 - [ ] On each brand, Layouts → "Add the starting layouts", press Preview on each shape and adjust (the built-in layouts are used until then). Finished ads use the cut-out of the variant's store photo, or a transparent pack shot uploaded to the brand kit (Media → Pack shots) where the store photo isn't good enough; with neither, the product is left off and the ad says so.
 - [ ] Settings → Budgets and spend (on any brand, under "For every brand"): the company's monthly budget and each person's default. The starting values ($1,000 and $200) are placeholders until you say otherwise (open question). A person's own budget is set on Users.
-- [ ] Sign in with Google, then `users:grant-admin` on the server. Invite the rest of the team from Users, with their roles per brand.
-- [ ] Settings → Sending email → Connect Gmail as the sending account; "Send a test".
+- [x] Sign in with Google, then `users:grant-admin` on the server (done 2026-10-30). Still to do: invite the rest of the team from Users, with their roles per brand.
+- [x] Settings → Sending email → Connect Gmail as the sending account; "Send a test". Done 2026-10-30.
 - [ ] Connections → Add connection: **Photoroom** (shared by every brand; an API key from photoroom.com → API on the Basic "Remove Background" plan, about 2 cents an image, billed by Photoroom). Then Products on each brand → "Make the cut-outs" (later store reads make them on their own). Nothing else to set: a brand with more than one Photoroom connection picks one under Settings → Store → "Cut-outs by".
 - [ ] Connections → Add connection: **Anthropic** (shared by every brand, the API key from console.anthropic.com), **Google Gemini** (an AI Studio key on a project with billing) and **OpenAI** (a key on a project with credit). Each checks its key at once. Then Models → "Add the starting models", read the prices against each provider's price page (the OpenAI 2K prices are estimates), and switch off what the team shouldn't use. Settings → AI models on each brand: the text models, effort, the image model and size.
+- [ ] Connections → Add connection: **Higgsfield** (shared by every brand; an API key from console.higgsfield.ai → API keys, its ID and secret, on the account with the prepaid balance). Then Models → "Add any missing starters" and switch off the Higgsfield models the team shouldn't pick. Settings → AI models → Higgsfield: the quality (medium by default). Never put the key in the server's `.env`.
 - [ ] Locally, the same three connections (no Anthropic key had been saved under Settings, so nothing was converted; on a database that has one, the migration turns it into a shared "Anthropic" connection to check).
 - [ ] Settings → Time zone, if it isn't America/Toronto.
 - [ ] Brands → New for each brand at launch (open question: which), then the Shopify connection and Store setting per brand, and "Read the store now". Then type the packaging sizes on Products (the page counts the variants still missing one).
@@ -79,6 +83,18 @@ Waiting on Lesley:
 ## Decisions
 
 Decisions made after the brief. Format: date, decision, reason.
+
+### 2026-10-30 — Higgsfield images (phase 1, step 3m)
+
+- **Four makers' models through one key, as one plugin.** `plugins/higgsfield` implements `ImageProvider` like Gemini and OpenAI. Its starting rows are the image models Higgsfield's API has that the direct plugins don't: Ideogram 4.0 (the best at words in the picture), Qwen Image 3 (good text and edits, cheap), Grok Imagine 2.0 (up to ten references) and Higgsfield's own Marketing Studio Image (up to 16 references); Marketing Studio Image 2.5 Flare is added switched off, since Higgsfield prices it by tokens and settles after the call. Left out: Soul (portraits and fashion), Z-Image Turbo (prompts over 800 characters are refused, and the planner's are longer), Recraft (a separate endpoint per size) and Ads Studio (it writes its own concepts, which is the planner's job here). An admin can add any of them as a row with its endpoint as the model ID; it gets the common request shape.
+- **The model ID is Higgsfield's endpoint**, such as `ideogram/v4.0`, so a model ID may now contain `/` (the Models page's rule). Where a model has a separate edit endpoint (Qwen's `…/edit`), the plugin switches to it when reference images come with the request.
+- **Submitted, then polled inside the job.** Higgsfield queues every call; the plugin waits for it from two seconds apart up to ten, for as long as `images.timeout_seconds` allows (180 s), the way the other plugins wait for a slow answer. What hasn't started by then is cancelled, which Higgsfield refunds. Webhooks would save the polling but need a public callback and a second job; not worth it for images that take 20 to 40 seconds.
+- **Reference images are uploaded to Higgsfield**, since its models take links and the app's files aren't public: one upload URL per image, then the file. Higgsfield is asked to keep each call's files an hour (`Hf-Expires-After`, the least it allows) instead of seven days, since the app downloads the image at once.
+- **The cost is Higgsfield's estimate for the exact call.** The status reply carries no cost, but `POST /estimate/<model>` is free and is what the account is charged, including what reference images add (two add about 2.5 cents on Marketing Studio). It's asked before each call; when Higgsfield can't say (token-priced models), the row's price is used. Failed and refused calls aren't charged by Higgsfield and aren't recorded.
+- **Quality as low, medium or high across models.** Each model has its own steps (Ideogram: turbo, default, quality; Grok: low, medium), so `higgsfield.quality` picks the low, middle or top one of each. Qwen rewrites prompts unless told not to; `higgsfield.prompts` sends them as written by default, since the planner writes them with the brand's rules.
+- **Refusals:** moderation (`nsfw`) and trademark refusals (`ip_detected`) are "blocked", like Gemini's and OpenAI's, so the run doesn't try them again; a failed call is tried again; a prompt longer than the model takes (Ideogram 2,048 characters) is refused before anything is sent.
+- **Checked live** on 2026-10-30 with Lesley's key: an Ideogram image at 4:5 (1792×2240, 20 s, 3 cents) and a Qwen edit of it from an uploaded reference (864×1152 at 3:4, 31 s, 4 cents).
+- **Not yet:** Higgsfield's video models (phase 3); Marketing Studio's presets (`enhance_prompt` with a preset needs a product photo and a person, a different flow from a plan's prompt).
 
 ### 2026-10-30 — "Try it" (phase 1, step 3l)
 
@@ -307,6 +323,21 @@ Lifted from the CS app and reworked for brands; nothing shared with it.
 - Higgsfield: its API runs on a separate prepaid balance (confirmed). Trademarks in a prompt are rejected (`ip_detected`), so the planner strips brand names from image prompts. Whether its enhancer is reachable through the API is an open question above.
 
 ## Log
+
+### 2026-10-30 — Higgsfield images (phase 1, step 3m)
+
+What was added. Decisions, "Higgsfield images", says why.
+
+- **Data:** no tables or columns. Five starting rows in `image_models` with provider `higgsfield` when "Add any missing starters" is pressed.
+- **Settings:** from the plugin, `higgsfield.quality` ("Higgsfield image quality", low/medium/high, default medium, platform and brand) and `higgsfield.prompts` ("Prompts to Higgsfield's models", as written or rewritten, default as written, advanced), under Settings → AI models → Higgsfield.
+- **Permissions:** none new.
+- **Screens:** Models shows a Higgsfield group; Connections → Add connection offers Higgsfield (API key ID, API key secret); the request form's model picker and the planner see the Higgsfield models once they're on and connected. A model with one reference image now reads "one reference image" in its summary.
+- **Commands and scheduled tasks:** none. The calls run inside the existing `GenerateImage` jobs.
+- **Plugins:** `plugins/higgsfield` (`Coachwood\Plugins\Higgsfield`): the key ID and secret (`Authorization: Key id:secret`), `healthCheck()` on `GET /models`, `imageModels()`, `defaultQuality()`, `generateImages()`: uploads references (`POST /files/generate-upload-url`, then a PUT), asks `POST /estimate/<model>`, submits with an `Idempotency-Key` and `Hf-Expires-After: 3600`, polls `status_url`, cancels on timeout, downloads the images; errors in plain words (refused key, balance too low, unknown model, queue full, model paused, outage, validation detail, moderation, trademark).
+- **Environment and server:** none. The local `.env` still has `HIGGSFIELD_API_KEY_ID` and `_SECRET` from 2026-10-28; nothing reads them, and they go once the connection exists (To do). Never in the server's `.env`.
+- **Core changes:** `ImageModels::save()` accepts model IDs with `/` (`ideogram/v4.0`); `ImageModel::summary()` says "one reference image"; `composer.json` requires `coachwood/plugin-higgsfield`.
+- **Tests:** `plugins/higgsfield/tests/HiggsfieldTest.php` (a call submitted, polled with backoff and downloaded, with the estimate as its cost; references uploaded and sent to the edit endpoint with their notes; Ideogram's one reference and quality names; several images as separate calls; the row's price when there's no estimate; a prompt too long refused before anything is sent; moderation, trademark, failed and lost calls; cancelling after the timeout; every API error as a safe message without the key; the quality steps per model; the starting rows; an admin's own row with the common shape; the key check). 353 pass. Models was screenshotted in headless Chrome.
+- **After deploying:** a Higgsfield connection, then "Add any missing starters" on Models (To do).
 
 ### 2026-10-30 — "Try it" (phase 1, step 3l)
 

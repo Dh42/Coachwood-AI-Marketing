@@ -14,12 +14,12 @@ Code deploys through Plesk's Git integration from the `production` branch. Nobod
 2. **PHP.** Hosting settings → PHP 8.4 (FPM), as the CS site. The extensions needed are `pdo_mysql`, `redis`, `mbstring`, `xml`, `curl`, `zip`, `intl`, `bcmath`, `gd`, `exif`, `fileinfo`. `gd` and `exif` matter here more than on the CS app: the app reads and composes images.
 3. **Node.** Plesk's Node.js extension with Node 24 is already there for the CS app; the deploy script uses it to build CSS and JS.
 4. **Database.** Databases → add a MariaDB database `coachwood_marketing` and a user for it. Don't reuse the CS app's user.
-5. **Redis.** Already running for the CS app (`redis-cli ping` answers `PONG`). The two apps share it: this app keeps every key apart with `CACHE_PREFIX=coachwood_marketing` and `REDIS_PREFIX=coachwood_marketing_` (set in step 7; both are in `.env.example`). Never leave them empty.
+5. **Redis.** Already running for the CS app, with a password: `grep requirepass /etc/redis/redis.conf` shows it, as does `REDIS_PASSWORD` in the CS app's `.env`. The two apps share it: this app keeps every key apart with `CACHE_PREFIX=coachwood_marketing` and `REDIS_PREFIX=coachwood_marketing_` (set in step 7; both are in `.env.example`). Never leave them empty.
 6. **Git.** Websites & Domains → Git → add `https://github.com/Dh42/Coachwood-AI-Marketing.git`, branch `production`, deploy automatically into `httpdocs`. Plesk shows a webhook URL; add it on GitHub (repo Settings → Webhooks, content type JSON, push events). Deployment actions: `bash deploy/plesk-deploy.sh`. The `production` branch is created by the first GitHub Actions run that passes (step 10), so add the Git integration after that, or press Deploy in Plesk once the branch exists.
 7. **Environment.** Create `SITE_PATH/.env` from `.env.example` and set:
    - `APP_ENV=production`, `APP_DEBUG=false`, `APP_URL=https://marketing.biosteel.com`, `LOG_STACK=daily`, `LOG_LEVEL=info`, `SESSION_LIFETIME=1440`.
    - The database from step 4.
-   - `CACHE_PREFIX` and `REDIS_PREFIX` as in step 5.
+   - `REDIS_PASSWORD` (the server's Redis password, step 5; without it every Redis call fails with "NOAUTH Authentication required"), and `CACHE_PREFIX` and `REDIS_PREFIX` as in step 5.
    - `TRUSTED_PROXIES=127.0.0.1,::1`. Plesk's nginx hands each request to PHP from `127.0.0.1` and adds the visitor's address to `X-Forwarded-For`; only that header, from those addresses, is believed, never the host or scheme. Every per-address limit (sign-in attempts, password resets) depends on it. To check nginx adds the header: `grep -ri x-forwarded-for /etc/nginx/plesk.conf.d/vhosts/marketing.biosteel.com.conf` should show `proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;`. If the site ever goes behind Cloudflare, Cloudflare's addresses have to be added here too (the CS app has a switch for it; this app doesn't yet).
    - With an `https://` `APP_URL`, the session cookie is HTTPS-only and browsers are told to use HTTPS only for a year (`SESSION_SECURE_COOKIE` and `HSTS_SECONDS` override either).
    - Google sign-in, email and Spaces: the sections below.
@@ -40,7 +40,7 @@ Code deploys through Plesk's Git integration from the `production` branch. Nobod
 
 ## Sign-in (Google)
 
-The app uses the CS app's Google OAuth client (Google Cloud project `cloud-tools-506215`), which already has `https://marketing.biosteel.com/auth/google/callback` and `http://localhost:8000/auth/google/callback` as authorised redirect URIs. Sign-in is limited to company Google accounts (Settings → "Company email domains"); everyone else is invited from the Users screen and signs in with a password.
+The app uses the CS app's Google OAuth client (Google Cloud project `cloud-tools-506215`, the client named `tools_oauth`). Its authorised redirect URIs must include the full callback paths, not the bare domain: `https://marketing.biosteel.com/auth/google/callback` for sign-in and `https://marketing.biosteel.com/settings/email/callback` for the Gmail connection (`http://localhost:8000/auth/google/callback` is there for local work). Google answers `redirect_uri_mismatch` when a path is missing or differs by a character. Sign-in is limited to company Google accounts (Settings → "Company email domains"); everyone else is invited from the Users screen and signs in with a password.
 
 1. **Environment.** In `SITE_PATH/.env` set `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` and `GOOGLE_REDIRECT_URI=https://marketing.biosteel.com/auth/google/callback`. Then `php artisan config:cache`.
 2. **First admin.** Sign in once with Google (you'll see "no access yet"), then on the server:
@@ -54,7 +54,7 @@ The app uses the CS app's Google OAuth client (Google Cloud project `cloud-tools
 
 Invitations, password resets, notifications and alerts go out through the Gmail API as one connected Google account: Lesley's, the app's main account.
 
-1. **Google Cloud.** In the same OAuth client, add the redirect URI `https://marketing.biosteel.com/settings/email/callback` (the CS app has its own; this one isn't there yet). The Gmail API is already enabled in that project.
+1. **Google Cloud.** In the same OAuth client, make sure the redirect URI `https://marketing.biosteel.com/settings/email/callback` is there (see Sign-in above). The Gmail API is already enabled in that project.
 2. **Environment.** In `SITE_PATH/.env` set `MAIL_MAILER=gmail_api`, and `MAIL_FROM_ADDRESS` to the address you'll connect (Gmail sends as that account whatever is set here, so keep them the same), with `MAIL_FROM_NAME`. Then `php artisan config:cache`.
 3. **Connect.** As an admin, open Settings → Sending email → Connect Gmail, sign in as the sending account and allow it to send. Press "Send a test" to check.
 

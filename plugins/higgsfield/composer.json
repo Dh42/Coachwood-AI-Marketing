@@ -1,0 +1,18 @@
+{
+    "name": "coachwood/plugin-higgsfield",
+    "description": "Higgsfield: Ideogram, Qwen, Grok and Marketing Studio images through one API.",
+    "type": "library",
+    "version": "1.0.0",
+    "autoload": {
+        "psr-4": {
+            "Coachwood\\Plugins\\Higgsfield\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Coachwood\\Plugins\\Higgsfield\\HiggsfieldServiceProvider"
+            ]
+        }
+    }
+}

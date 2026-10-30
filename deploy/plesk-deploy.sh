@@ -19,7 +19,7 @@ trap 'status=$?; [ "$status" -eq 0 ] && echo "=== $(date -u "+%Y-%m-%d %H:%M:%S 
 PHP="${PHP:-/opt/plesk/php/8.4/bin/php}"
 # Plesk keeps composer in different places by version; the first one found is used.
 if [ -z "${COMPOSER:-}" ]; then
-    for candidate in /usr/lib/plesk-9.0/composer.phar /usr/local/psa/var/modules/composer/composer.phar "$(command -v composer 2>/dev/null || true)"; do
+    for candidate in /usr/lib/plesk-9.0/composer.phar /usr/lib64/plesk-9.0/composer.phar /usr/local/psa/var/modules/composer/composer.phar /opt/plesk/composer/composer.phar "$(command -v composer 2>/dev/null || true)"; do
         if [ -n "$candidate" ] && [ -f "$candidate" ]; then COMPOSER="$candidate"; break; fi
     done
 fi
