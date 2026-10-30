@@ -3,6 +3,8 @@
 use App\Auth\Role;
 use App\Livewire\Settings\SettingsForm;
 use App\Llm\Effort;
+use App\Settings\SettingControl;
+use App\Settings\SettingDefinition;
 use App\Settings\Settings;
 use App\Settings\SettingScope;
 use App\Settings\SettingsRegistry;
@@ -48,11 +50,12 @@ it('lets only admins change the default for all brands', function () {
 });
 
 it('says a value in a few words', function () {
+    app(SettingsRegistry::class)->define(new SettingDefinition('test.secret', 'A secret', '', SettingControl::Secret, null));
     $describe = fn (string $key, mixed $value) => app(SettingsRegistry::class)->get($key)->describe($value);
 
     expect($describe('invitations.expiry_days', 7))->toBe('7 days')
         ->and($describe('auth.allowed_domains', ['a', 'b', 'c', 'd', 'e']))->toBe('a, b, c and 2 more')
         ->and($describe('auth.allowed_domains', []))->toBe('none')
-        ->and($describe('llm.anthropic_api_key', 'secret'))->toBe('saved')
+        ->and($describe('test.secret', 'secret'))->toBe('saved')
         ->and($describe('llm.effort', 'low'))->toBe(Effort::OPTIONS['low']);
 });

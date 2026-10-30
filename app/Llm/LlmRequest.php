@@ -12,7 +12,7 @@ namespace App\Llm;
  *   ['type' => 'tool_result', 'tool_use_id' => ..., 'content' => string, 'is_error' => bool]
  * An assistant message may also carry 'raw': the provider's own content,
  * which it sends back unchanged (Anthropic needs its thinking blocks back
- * mid tool loop).
+ * mid tool loop). The brand says whose provider connection to use.
  */
 final readonly class LlmRequest
 {
@@ -27,5 +27,6 @@ final readonly class LlmRequest
         public array $tools = [],
         public int $maxTokens = 16000,
         public string $effort = 'high',
+        public ?int $brandId = null,
     ) {}
 }

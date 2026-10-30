@@ -16,7 +16,7 @@ class BrandFactory extends Factory
         $name = fake()->unique()->company();
 
         return [
-            'slug' => Str::slug($name).'-'.fake()->unique()->numberBetween(1, 99999),
+            'slug' => rtrim(mb_substr(Str::slug($name), 0, 33), '-').'-'.fake()->unique()->numberBetween(1, 99999),
             'name' => $name,
             'color' => fake()->hexColor(),
         ];

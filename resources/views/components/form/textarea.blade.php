@@ -1,0 +1,2 @@
+{{-- Full width unless the page gives its own (w-28, sm:w-40…): both on one element, w-full wins in the built CSS. --}}
+<textarea {{ $attributes->merge(['rows' => 3])->class([preg_match('/(^|\s)([a-z0-9]+:)*w-/', (string) $attributes->get('class')) ? 'max-w-full' : 'w-full', 'block rounded-md border border-zinc-300 bg-white px-3 py-2 shadow-xs focus:border-zinc-500 focus:ring-2 focus:ring-zinc-200 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:focus:border-zinc-500 dark:focus:ring-zinc-700']) }}>{{ $slot }}</textarea>

@@ -3,6 +3,7 @@
 namespace App\Livewire\Catalogue;
 
 use App\Catalogue\Catalogue;
+use App\Catalogue\Cutouts;
 use App\Jobs\SyncCatalogue;
 use App\Models\Brand;
 use App\Models\CatalogueSync;
@@ -10,6 +11,7 @@ use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Settings\Settings;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\Title;
@@ -19,7 +21,8 @@ use Livewire\WithPagination;
 
 /**
  * The brand's catalogue as the app sees it, with each variant's packaging
- * size, which the team types in (the store doesn't know it).
+ * size, which the team types in (the store doesn't know it), and the
+ * cut-outs of the store's photos for finished ads.
  */
 #[Title('Products')]
 class ProductsPage extends Component
@@ -66,6 +69,26 @@ class ProductsPage extends Component
 
         SyncCatalogue::dispatch($this->brand, 'manual', Auth::user());
         $this->dispatch('saved', message: 'Reading the store now. This page updates when it\'s done.');
+    }
+
+    /**
+     * Queues a cut-out for every photo still without one (one product's,
+     * or the whole brand's), including those that failed last time.
+     */
+    public function makeCutouts(Cutouts $cutouts, ?int $productId = null): void
+    {
+        $this->authorize('brands.manage', $this->brand);
+
+        if (! $cutouts->remover($this->brand)) {
+            $this->dispatch('failed', message: 'No background-removal service is connected yet. Add Photoroom under Connections, then choose it under Settings → Store if the brand has more than one.');
+
+            return;
+        }
+
+        $count = $cutouts->queue($this->brand, Auth::user(), again: true, only: $productId ? $this->product($productId) : null);
+        $count > 0
+            ? $this->dispatch('saved', message: "Making {$count} ".Str::plural('cut-out', $count).'. This page updates as they land.')
+            : $this->dispatch('failed', message: 'Every photo that an ad would use is cut out already.');
     }
 
     public function openProduct(int $id): void
@@ -124,11 +147,11 @@ class ProductsPage extends Component
         }
     }
 
-    public function render(Catalogue $catalogue)
+    public function render(Catalogue $catalogue, Cutouts $cutouts)
     {
         $search = trim($this->search);
 
-        $products = Product::with(['variants', 'images'])
+        $products = Product::with(['variants.image', 'images'])
             ->where('brand_id', $this->brand->id)
             ->when($this->show !== 'removed', fn ($q) => $q->whereNull('removed_at'))
             ->when($this->show === 'removed', fn ($q) => $q->whereNotNull('removed_at'))
@@ -142,8 +165,14 @@ class ProductsPage extends Component
             ->orderBy('title')
             ->paginate(25);
 
+        $summary = $cutouts->summary($this->brand);
+
         return view('livewire.catalogue.products-page', [
             'products' => $products,
+            'cutouts' => $cutouts,
+            'remover' => $cutouts->remover($this->brand),
+            'cutoutSummary' => $summary,
+            'cutoutsPending' => $summary['wanted'] - $summary['made'] - $summary['failed'],
             'store' => $catalogue->store($this->brand),
             'lastSync' => $catalogue->lastSync($this->brand),
             'running' => $catalogue->lastSync($this->brand)?->status === CatalogueSync::RUNNING,
@@ -156,6 +185,6 @@ class ProductsPage extends Component
 
     private function product(int $id): Product
     {
-        return Product::with('variants')->where('brand_id', $this->brand->id)->findOrFail($id);
+        return Product::with(['variants.image', 'images'])->where('brand_id', $this->brand->id)->findOrFail($id);
     }
 }

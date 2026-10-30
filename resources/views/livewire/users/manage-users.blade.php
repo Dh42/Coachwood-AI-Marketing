@@ -81,6 +81,7 @@
                     <tr>
                         <th class="px-4 py-2 font-medium">Name</th>
                         <th class="px-4 py-2 font-medium">Role</th>
+                        <th class="px-4 py-2 font-medium">Budget this month</th>
                         <th class="px-4 py-2 font-medium">Last signed in</th>
                         <th class="px-4 py-2"></th>
                     </tr>
@@ -107,6 +108,29 @@
                                 @endforeach
                             </td>
                             <td class="px-4 py-2.5">
+                                @php($person = $people[$user->id])
+                                @if ($budgetFor === $user->id)
+                                    <form wire:submit="saveBudget" class="flex items-start gap-1">
+                                        <div>
+                                            <x-form.input type="number" step="1" min="0" wire:model="budgetAmount" class="w-28 py-1" aria-label="Monthly budget for {{ $user->name }}" />
+                                            @error('budgetAmount') <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ $message }}</p> @enderror
+                                        </div>
+                                        <x-button type="submit" size="sm">Save</x-button>
+                                        <x-button size="sm" variant="ghost" wire:click="keepBudget">Keep</x-button>
+                                    </form>
+                                    @if ($person['own'])
+                                        <button type="button" wire:click="defaultBudget({{ $user->id }})" class="mt-1 text-xs text-zinc-500 underline dark:text-zinc-400">Use the default instead</button>
+                                    @endif
+                                @else
+                                    <span class="tabular-nums">${{ \App\Budgets\Budgets::money($person['spent']) }} of ${{ \App\Budgets\Budgets::money($person['limit']) }}</span>
+                                    <span class="text-xs text-zinc-500 dark:text-zinc-400">{{ $person['own'] ? 'their own' : 'the default' }}</span>
+                                    @if ($person['remaining'] <= 0 && $person['limit'] > 0) <span class="text-xs text-amber-700 dark:text-amber-400">used up</span> @endif
+                                    @if ($canBudget)
+                                        <x-button size="sm" variant="ghost" wire:click="editBudget({{ $user->id }})">Change</x-button>
+                                    @endif
+                                @endif
+                            </td>
+                            <td class="px-4 py-2.5">
                                 @if ($user->isDisabled())
                                     Turned off
                                 @elseif ($user->last_login_at)
@@ -131,7 +155,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="4" class="px-4 py-6 text-center text-zinc-500 dark:text-zinc-400">No one matches that search.</td></tr>
+                        <tr><td colspan="5" class="px-4 py-6 text-center text-zinc-500 dark:text-zinc-400">No one matches that search.</td></tr>
                     @endforelse
                 </tbody>
             </table>

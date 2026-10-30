@@ -133,6 +133,23 @@ class Connections
     }
 
     /**
+     * The connection a brand uses for a plugin: its own first, else a
+     * shared one, working ones first (no brand means shared only). Null
+     * when there's none at all.
+     */
+    public function for(string $pluginKey, Brand|int|null $brand = null): ?Connection
+    {
+        $brandId = $brand instanceof Brand ? $brand->id : $brand;
+
+        return Connection::where('plugin', $pluginKey)
+            ->when($brandId === null, fn ($q) => $q->whereNull('brand_id'), fn ($q) => $q->forBrand($brandId))
+            ->orderByRaw('brand_id is null')
+            ->orderByRaw("status = 'connected' desc")
+            ->orderBy('id')
+            ->first();
+    }
+
+    /**
      * Where a connection is in use, in words (empty when nothing uses it).
      *
      * @return list<string>

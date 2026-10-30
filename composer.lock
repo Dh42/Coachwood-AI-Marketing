@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "e1449d58c02988e2e3d0e8a92960448b",
+    "content-hash": "e90e4b1df0883a3627e528130e83be3e",
     "packages": [
         {
             "name": "anthropic-ai/sdk",
@@ -503,6 +503,114 @@
                 }
             ],
             "time": "2026-09-06T14:11:38+00:00"
+        },
+        {
+            "name": "coachwood/plugin-anthropic",
+            "version": "1.0.0",
+            "dist": {
+                "type": "path",
+                "url": "plugins/anthropic",
+                "reference": "fd6d7cbbbecbc769ca0718e3955974ef3b65d296"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Coachwood\\Plugins\\Anthropic\\AnthropicServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Coachwood\\Plugins\\Anthropic\\": "src/"
+                }
+            },
+            "description": "Anthropic: the Claude models that plan, write the prompts and copy, and review.",
+            "transport-options": {
+                "symlink": true,
+                "relative": true
+            }
+        },
+        {
+            "name": "coachwood/plugin-gemini",
+            "version": "1.0.0",
+            "dist": {
+                "type": "path",
+                "url": "plugins/gemini",
+                "reference": "a2117a01dd2ab66738cf0de4fbd724678ba0bf6b"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Coachwood\\Plugins\\Gemini\\GeminiServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Coachwood\\Plugins\\Gemini\\": "src/"
+                }
+            },
+            "description": "Google Gemini: the Nano Banana image models.",
+            "transport-options": {
+                "symlink": true,
+                "relative": true
+            }
+        },
+        {
+            "name": "coachwood/plugin-openai",
+            "version": "1.0.0",
+            "dist": {
+                "type": "path",
+                "url": "plugins/openai",
+                "reference": "450cde4efc96cd4da24369a4e0ebaf1204fbc857"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Coachwood\\Plugins\\OpenAI\\OpenAIServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Coachwood\\Plugins\\OpenAI\\": "src/"
+                }
+            },
+            "description": "OpenAI: the GPT Image models.",
+            "transport-options": {
+                "symlink": true,
+                "relative": true
+            }
+        },
+        {
+            "name": "coachwood/plugin-photoroom",
+            "version": "1.0.0",
+            "dist": {
+                "type": "path",
+                "url": "plugins/photoroom",
+                "reference": "7fd005b888d11b63ad805cc9022ebf34b54e78b9"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Coachwood\\Plugins\\Photoroom\\PhotoroomServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Coachwood\\Plugins\\Photoroom\\": "src/"
+                }
+            },
+            "description": "Photoroom: cuts the product out of a store photo for finished ads.",
+            "transport-options": {
+                "symlink": true,
+                "relative": true
+            }
         },
         {
             "name": "coachwood/plugin-shopify",

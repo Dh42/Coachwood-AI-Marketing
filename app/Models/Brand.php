@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use LogicException;
 
 /**
@@ -40,6 +41,22 @@ class Brand extends Model
     public function connections(): HasMany
     {
         return $this->hasMany(Connection::class);
+    }
+
+    /**
+     * @return HasOne<BrandKit, $this>
+     */
+    public function kit(): HasOne
+    {
+        return $this->hasOne(BrandKit::class);
+    }
+
+    /**
+     * @return HasMany<BrandKitItem, $this>
+     */
+    public function kitItems(): HasMany
+    {
+        return $this->hasMany(BrandKitItem::class);
     }
 
     /**

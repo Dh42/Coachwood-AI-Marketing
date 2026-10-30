@@ -1,0 +1,18 @@
+{
+    "name": "coachwood/plugin-openai",
+    "description": "OpenAI: the GPT Image models.",
+    "type": "library",
+    "version": "1.0.0",
+    "autoload": {
+        "psr-4": {
+            "Coachwood\\Plugins\\OpenAI\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Coachwood\\Plugins\\OpenAI\\OpenAIServiceProvider"
+            ]
+        }
+    }
+}

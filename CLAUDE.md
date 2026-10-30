@@ -4,7 +4,8 @@ A standalone app where the marketing team types what they need, picks the platfo
 
 Read before working:
 - `docs/brief.md`: the original brief. Never edited; changes go in `context.md`.
-- `context.md`: decisions, open questions and the build log. Update it at the end of every piece of work.
+- `context.md`: decisions, open questions and the build log. Update it at the end of every piece of work: a log entry for what changed and was added (data, settings, permissions, screens, commands and scheduled tasks, plugins, environment and server, core changes, tests, after deploying), and a To do item for anything Lesley must do after deploying it.
+- `docs/deploy.md`: how production is set up and what each deploy needs.
 - `plugins/README.md`: how providers and integrations are packaged.
 
 Relationship to the CS app (`/home/lesley/PhpstormProjects/Coachwood-AI-CS`):

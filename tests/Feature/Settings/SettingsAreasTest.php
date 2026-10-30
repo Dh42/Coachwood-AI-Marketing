@@ -39,16 +39,16 @@ it('keeps the Brand entry to the brand-wide settings, with every feature\'s entr
 
 it('opens a feature\'s settings with a save bar, and the platform-only ones under "For every brand" for admins', function () {
     $page = $this->get(route('area-settings', [$this->brand, 'ai']))->assertOk()
-        ->assertSee('AI models settings')->assertSee('Model for planning and copy')->assertSee('For every brand')->assertSee('Anthropic API key')
+        ->assertSee('AI models settings')->assertSee('Model for planning and copy')->assertSee('For every brand')->assertSee('Gemini API version')
         ->assertSee('aria-label="Save changes"', false)->assertSee('data-settings-menu', false);
 
     signInAs(Role::Creator);
-    $this->get(route('area-settings', [$this->brand, 'ai']))->assertOk()->assertDontSee('data-for-every-brand', false)->assertDontSee('Anthropic API key');
+    $this->get(route('area-settings', [$this->brand, 'ai']))->assertOk()->assertDontSee('data-for-every-brand', false)->assertDontSee('Gemini API version');
 });
 
 it('lists the entries with the open one marked', function () {
     expect(collect(app(SettingsAreas::class)->menu($this->admin, $this->brand))->map(fn ($e) => [$e['heading'], collect($e['areas'])->pluck('title')->all()])->all())->toBe([
-        [null, ['AI models', 'Store']],
+        [null, ['AI models', 'Generation', 'Review and quality', 'Budgets and spend', 'Brand kit', 'Prompts', 'Store']],
     ]);
 
     $page = $this->get(route('area-settings', [$this->brand, 'ai']))->assertOk()->getContent();
@@ -75,5 +75,5 @@ it('saves only the area\'s own settings', function () {
 it('keeps platform Settings to what belongs to no feature', function () {
     $page = pageOnly($this->get(route('settings'))->assertOk()->getContent());
 
-    expect($page)->toContain('Time zone')->toContain('Company email domains')->not->toContain('Model for planning and copy')->not->toContain('Anthropic API key');
+    expect($page)->toContain('Time zone')->toContain('Company email domains')->not->toContain('Model for planning and copy')->not->toContain('Gemini API version');
 });

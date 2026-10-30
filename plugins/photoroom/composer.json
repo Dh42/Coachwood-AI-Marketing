@@ -1,0 +1,18 @@
+{
+    "name": "coachwood/plugin-photoroom",
+    "description": "Photoroom: cuts the product out of a store photo for finished ads.",
+    "type": "library",
+    "version": "1.0.0",
+    "autoload": {
+        "psr-4": {
+            "Coachwood\\Plugins\\Photoroom\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Coachwood\\Plugins\\Photoroom\\PhotoroomServiceProvider"
+            ]
+        }
+    }
+}

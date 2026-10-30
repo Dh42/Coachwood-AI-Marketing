@@ -1,6 +1,6 @@
 # Coachwood Marketing Creative
 
-AI marketing creative for BioSteel and Canadian Protein: one brief in, a reviewed shortlist of finished ads, clean images, video and copy out. See `CLAUDE.md` for orientation, `docs/brief.md` for the brief and `context.md` for decisions and progress.
+AI marketing creative for BioSteel and Canadian Protein: one brief in, a reviewed shortlist of finished ads, clean images, video and copy out. See `CLAUDE.md` for orientation, `docs/brief.md` for the brief, `context.md` for decisions, progress and the log of changes, and `docs/deploy.md` for production.
 
 ## Local set-up
 

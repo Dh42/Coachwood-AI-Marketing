@@ -20,8 +20,8 @@ it('never shows double-escaped characters on any screen', function (string $rout
 
     assertNotDoubleEscaped($this->get($brand ? route($route, $b) : route($route))->getContent());
 })->with([
-    ['brand-settings', true],
-    ['brands.create', false], ['connections', false], ['connections.create', false], ['users', false], ['settings', false], ['activity', false], ['scheduled-tasks', false], ['account', false],
+    ['brand-settings', true], ['products', true], ['brand-kit', true], ['requests', true], ['requests.create', true],
+    ['brands.create', false], ['connections', false], ['connections.create', false], ['platforms', false], ['models', false], ['users', false], ['settings', false], ['activity', false], ['scheduled-tasks', false], ['account', false], ['notices', false], ['spend', false],
 ]);
 
 it('shows the example connection name with plain quotes', function () {

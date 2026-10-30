@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Llm;
+namespace Coachwood\Plugins\Anthropic;
 
 use Anthropic\Client;
 use Anthropic\Core\Exceptions\APIConnectionException;
@@ -8,25 +8,89 @@ use Anthropic\Core\Exceptions\APIStatusException;
 use Anthropic\Core\Exceptions\AuthenticationException;
 use Anthropic\Core\Exceptions\PermissionDeniedException;
 use Anthropic\Core\Exceptions\RateLimitException;
+use App\Llm\LlmException;
+use App\Llm\LlmRequest;
+use App\Llm\LlmResponse;
+use App\Llm\ToolSpec;
+use App\Models\Connection;
 use App\Models\LlmModel;
-use App\Settings\Settings;
+use App\Plugins\ConnectionField;
+use App\Plugins\ConnectionMethod;
+use App\Plugins\Contracts\LanguageProvider;
+use App\Plugins\HealthResult;
+use App\Plugins\IntegrationPlugin;
+use Illuminate\Support\Facades\Http;
 
 /**
  * Claude through Anthropic's official PHP SDK (beta messages, for the
  * server-side refusal fallback). Adaptive thinking with the configured
  * effort; the system prompt and conversation are cached between the turns
- * of a tool loop.
+ * of a tool loop. The key lives on an Anthropic connection, shared by
+ * every brand or one per brand.
  */
-class AnthropicProvider implements LlmProvider
+class AnthropicPlugin extends IntegrationPlugin implements LanguageProvider
 {
     private const REFUSAL_FALLBACK_BETA = 'server-side-fallback-2026-07-01';
+
+    private const API_VERSION = '2023-06-01';
 
     /**
      * @param  array<string, mixed>  $requestOptions  Passed to the SDK (tests use it to swap the HTTP client).
      */
     public function __construct(private array $requestOptions = []) {}
 
-    public function complete(LlmRequest $request, LlmModel $model): LlmResponse
+    public function key(): string
+    {
+        return 'anthropic';
+    }
+
+    public function name(): string
+    {
+        return 'Anthropic';
+    }
+
+    public function description(): string
+    {
+        return 'The Claude models that read the brief, plan the run, write the prompts and copy, and review every output.';
+    }
+
+    public function connectionMethod(): ConnectionMethod
+    {
+        return ConnectionMethod::Fields;
+    }
+
+    public function connectionFields(): array
+    {
+        return [
+            new ConnectionField('api_key', 'API key',
+                help: 'From console.anthropic.com → API keys. Stored encrypted and never shown again.',
+                secret: true,
+                placeholder: 'sk-ant-…'),
+        ];
+    }
+
+    public function accountLabel(Connection $connection): string
+    {
+        return 'the Anthropic API';
+    }
+
+    public function healthCheck(Connection $connection): HealthResult
+    {
+        $response = Http::withHeaders(['x-api-key' => (string) $connection->secret('api_key'), 'anthropic-version' => self::API_VERSION])
+            ->acceptJson()->timeout(20)->get('https://api.anthropic.com/v1/models', ['limit' => 1]);
+
+        if ($response->status() === 401 || $response->status() === 403) {
+            return HealthResult::failed('Anthropic refused the API key.');
+        }
+
+        if ($response->failed()) {
+            return HealthResult::failed("Anthropic returned an error ({$response->status()}).");
+        }
+
+        return HealthResult::ok('Connected to the Anthropic API');
+    }
+
+    public function complete(LlmRequest $request, LlmModel $model, Connection $connection): LlmResponse
     {
         $params = [
             'model' => $request->model,
@@ -56,9 +120,9 @@ class AnthropicProvider implements LlmProvider
         }
 
         try {
-            $message = $this->client()->beta->messages->create(...$params);
+            $message = $this->client($connection)->beta->messages->create(...$params);
         } catch (AuthenticationException|PermissionDeniedException) {
-            throw new LlmException('Anthropic refused the API key. Check it under Settings → AI models.');
+            throw new LlmException("Anthropic refused the API key on the \"{$connection->name}\" connection. Check it under Connections.");
         } catch (RateLimitException) {
             throw new LlmException('Anthropic is limiting requests right now. The run can be tried again shortly.', retryable: true);
         } catch (APIStatusException $e) {
@@ -140,12 +204,12 @@ class AnthropicProvider implements LlmProvider
         return $schema;
     }
 
-    private function client(): Client
+    private function client(Connection $connection): Client
     {
-        $key = app(Settings::class)->get('llm.anthropic_api_key') ?: config('services.anthropic.key');
+        $key = $connection->secret('api_key');
 
         if (blank($key)) {
-            throw new LlmException('No Anthropic API key is set. Add one under Settings → AI models.');
+            throw new LlmException("The Anthropic connection \"{$connection->name}\" has no API key. Add one under Connections.");
         }
 
         return new Client(apiKey: $key, requestOptions: $this->requestOptions ?: null);

@@ -28,6 +28,7 @@
                 <div class="flex items-center gap-2">
                     @auth
                         <x-quick-find />
+                        <livewire:notices.bell />
                     @endauth
                     @if ($settingsArea && $routeBrand instanceof \App\Models\Brand)
                         <a href="{{ $settingsArea->url($routeBrand) }}" data-settings-link

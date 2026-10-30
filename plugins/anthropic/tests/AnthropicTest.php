@@ -1,26 +1,28 @@
 <?php
 
-use App\Llm\AnthropicProvider;
 use App\Llm\LlmException;
 use App\Llm\LlmManager;
 use App\Llm\LlmRequest;
 use App\Llm\LlmResponse;
 use App\Llm\ToolSpec;
-use App\Settings\Settings;
-use App\Settings\SettingScope;
+use App\Models\Connection;
+use App\Plugins\Connections;
+use App\Plugins\PluginRegistry;
+use Coachwood\Plugins\Anthropic\AnthropicPlugin;
 use GuzzleHttp\Client;
 use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Middleware;
 use GuzzleHttp\Psr7\Response;
+use Illuminate\Support\Facades\Http;
 
 /**
  * Checks the exact requests the official SDK sends, and how responses are
  * read, by giving the SDK a stand-in HTTP client with canned replies.
  */
 beforeEach(function () {
-    $admin = signInAs();
-    app(Settings::class)->set('llm.anthropic_api_key', 'sk-ant-test', SettingScope::Platform, 0, $admin);
+    signInAs();
+    $this->connection = Connection::factory()->create(['plugin' => 'anthropic', 'name' => 'Anthropic', 'brand_id' => null, 'config' => [], 'secrets' => ['api_key' => 'sk-ant-test']]);
     $this->sent = new ArrayObject;
 });
 
@@ -29,8 +31,8 @@ function anthropic(array $replies): LlmManager
     $stack = HandlerStack::create(new MockHandler($replies));
     $history = test()->sent;
     $stack->push(Middleware::history($history));
-    $manager = new LlmManager;
-    $manager->register('anthropic', new AnthropicProvider(['transporter' => new Client(['handler' => $stack]), 'maxRetries' => 0]));
+    $manager = new LlmManager(app(PluginRegistry::class), app(Connections::class));
+    $manager->register('anthropic', new AnthropicPlugin(['transporter' => new Client(['handler' => $stack]), 'maxRetries' => 0]));
 
     return $manager;
 }
@@ -131,12 +133,34 @@ it('turns API errors into safe messages that never include the key', function (i
     'bad request' => [400, 'invalid_request_error', 'invalid_request_error', false],
 ]);
 
-it('explains when no API key is set', function () {
-    app(Settings::class)->reset('llm.anthropic_api_key', SettingScope::Platform, 0, auth()->user());
-    config(['services.anthropic.key' => null]);
+it('explains when there is no Anthropic connection', function () {
+    $this->connection->delete();
 
     anthropic([])->complete(llmRequest());
-})->throws(LlmException::class, 'No Anthropic API key is set');
+})->throws(LlmException::class, 'No Anthropic connection');
+
+it('explains when the connection has stopped working', function () {
+    $this->connection->update(['status' => Connection::STATUS_ERROR, 'last_error' => 'Anthropic refused the API key.']);
+
+    anthropic([])->complete(llmRequest());
+})->throws(LlmException::class, 'isn\'t working: Anthropic refused the API key');
+
+it('uses the brand\'s own connection before a shared one', function () {
+    $brand = makeBrand();
+    Connection::factory()->create(['plugin' => 'anthropic', 'name' => 'Brand key', 'brand_id' => $brand->id, 'config' => [], 'secrets' => ['api_key' => 'sk-ant-brand']]);
+
+    anthropic([message([['type' => 'text', 'text' => 'ok']])])->complete(new LlmRequest('claude-opus-5', 'x', [['role' => 'user', 'content' => 'Hi']], brandId: $brand->id));
+
+    expect($this->sent[0]['request']->getHeaderLine('x-api-key'))->toBe('sk-ant-brand');
+});
+
+it('checks the key against the models endpoint, and connects by key from the Connections screens', function () {
+    Http::fake(['api.anthropic.com/v1/models*' => Http::sequence()->push(['data' => [['id' => 'claude-opus-5-5']]])->push(['type' => 'error'], 401)]);
+    expect(app(AnthropicPlugin::class)->healthCheck($this->connection)->ok)->toBeTrue();
+    Http::assertSent(fn ($request) => $request->header('x-api-key') === ['sk-ant-test'] && $request->hasHeader('anthropic-version'));
+
+    expect(app(AnthropicPlugin::class)->healthCheck($this->connection)->message)->toBe('Anthropic refused the API key.');
+});
 
 it('sends images as base64 image blocks', function () {
     $llm = anthropic([message([['type' => 'text', 'text' => 'I can see the crack.']])]);

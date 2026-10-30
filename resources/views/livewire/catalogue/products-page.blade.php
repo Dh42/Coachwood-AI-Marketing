@@ -1,4 +1,4 @@
-<div class="max-w-5xl space-y-6" @if ($running) wire:poll.5s @endif>
+<div class="max-w-5xl space-y-6" @if ($running) wire:poll.5s @elseif ($remover && $cutoutsPending > 0) wire:poll.10s @endif>
     <div class="flex flex-wrap items-start justify-between gap-3">
         <div class="max-w-2xl">
             <p class="text-zinc-600 dark:text-zinc-400">
@@ -17,9 +17,27 @@
             @if ($missing > 0)
                 <p class="mt-1 text-amber-700 dark:text-amber-400">{{ $missing }} {{ Str::plural('variant', $missing) }} {{ $missing === 1 ? 'has' : 'have' }} no packaging size yet. Without one a pack shot can't be scaled next to another.</p>
             @endif
+            @if ($total > 0)
+                <p @class(['mt-1', 'text-zinc-600 dark:text-zinc-400' => $remover, 'text-amber-700 dark:text-amber-400' => ! $remover])>
+                    @if (! $remover)
+                        No background-removal service is connected, so the store's photos aren't cut out for finished ads: an ad shows the brand kit's transparent pack shot or no product. Add Photoroom under Connections.
+                    @elseif ($cutoutSummary['wanted'] === 0)
+                        The store gave no photos to cut out.
+                    @else
+                        {{ $cutoutSummary['made'] }} of {{ $cutoutSummary['wanted'] }} store photos {{ $cutoutSummary['made'] === 1 ? 'is' : 'are' }} cut out for finished ads{{ $cutoutsPending > 0 ? ", {$cutoutsPending} ".($cutoutsPending === 1 ? 'is' : 'are').' being made' : '' }}.
+                        @if ($cutoutSummary['failed'] > 0) <span class="text-amber-700 dark:text-amber-400">{{ $cutoutSummary['failed'] }} couldn't be: open the product to see why.</span> @endif
+                        A pack shot uploaded to the brand kit is used before the cut-out.
+                    @endif
+                </p>
+            @endif
         </div>
         @if ($canManage)
-            <x-button variant="secondary" wire:click="syncNow" wire:loading.attr="disabled" :disabled="$running">{{ $running ? 'Reading the store…' : 'Read the store now' }}</x-button>
+            <div class="flex gap-2">
+                @if ($remover && $cutoutSummary['wanted'] > $cutoutSummary['made'])
+                    <x-button variant="secondary" wire:click="makeCutouts" wire:loading.attr="disabled">Make the cut-outs</x-button>
+                @endif
+                <x-button variant="secondary" wire:click="syncNow" wire:loading.attr="disabled" :disabled="$running">{{ $running ? 'Reading the store…' : 'Read the store now' }}</x-button>
+            </div>
         @endif
     </div>
 
@@ -40,6 +58,7 @@
                     <th class="px-4 py-2 font-medium">Product</th>
                     <th class="px-4 py-2 font-medium">Variants</th>
                     <th class="px-4 py-2 font-medium">Sizes</th>
+                    <th class="px-4 py-2 font-medium">Cut-outs</th>
                     <th class="px-4 py-2"></th>
                 </tr>
             </thead>
@@ -47,6 +66,7 @@
                 @forelse ($products as $product)
                     @php($variants = $product->variants->whereNull('removed_at'))
                     @php($withSizes = $variants->filter->hasDimensions()->count())
+                    @php($cut = $cutouts->status($product))
                     <tr wire:key="product-{{ $product->id }}" class="align-top">
                         <td class="px-4 py-2.5">
                             <div class="flex items-start gap-3">
@@ -78,6 +98,19 @@
                                 <span class="text-amber-700 dark:text-amber-400">{{ $variants->count() - $withSizes }} missing</span>
                             @endif
                         </td>
+                        <td class="px-4 py-2.5">
+                            @if ($cut['wanted'] === 0)
+                                —
+                            @elseif ($cut['made'] === $cut['wanted'])
+                                <span class="text-green-700 dark:text-green-400">All set</span>
+                            @elseif ($cut['failed'] > 0)
+                                <span class="text-amber-700 dark:text-amber-400">{{ $cut['failed'] }} failed</span>
+                            @elseif (! $remover)
+                                <span class="text-zinc-500 dark:text-zinc-400">{{ $cut['wanted'] - $cut['made'] }} to make</span>
+                            @else
+                                <span class="text-zinc-500 dark:text-zinc-400">{{ $cut['made'] }} of {{ $cut['wanted'] }}</span>
+                            @endif
+                        </td>
                         <td class="px-4 py-2.5 text-right whitespace-nowrap">
                             @if ($open === $product->id)
                                 <x-button size="sm" variant="ghost" wire:click="close">Close</x-button>
@@ -88,7 +121,7 @@
                     </tr>
                     @if ($open === $product->id)
                         <tr wire:key="product-open-{{ $product->id }}" class="bg-zinc-50 dark:bg-zinc-950/40">
-                            <td colspan="4" class="px-4 py-4">
+                            <td colspan="5" class="px-4 py-4">
                                 <div class="grid gap-6 lg:grid-cols-[1fr_16rem]">
                                     <form wire:submit="saveSizes" class="space-y-3">
                                         <p class="text-zinc-600 dark:text-zinc-400">Packaging size of each variant, in centimetres, as it stands on a shelf: width across the front, height, and depth front to back. Measured, not guessed.</p>
@@ -123,14 +156,32 @@
                                         @endif
                                     </form>
                                     <div class="space-y-2">
-                                        <p class="text-xs font-medium tracking-wide text-zinc-500 uppercase dark:text-zinc-400">Store photos</p>
-                                        <div class="flex flex-wrap gap-2">
+                                        <p class="text-xs font-medium tracking-wide text-zinc-500 uppercase dark:text-zinc-400">Store photos and cut-outs</p>
+                                        @php($wanted = $cutouts->wanted($product)->pluck('id')->all())
+                                        <div class="space-y-2">
                                             @forelse ($product->images->whereNull('removed_at') as $image)
-                                                <img src="{{ $image->url }}" alt="{{ $image->alt }}" class="size-16 rounded border border-zinc-200 bg-white object-contain dark:border-zinc-700" loading="lazy" />
+                                                <div wire:key="image-{{ $image->id }}" class="flex items-start gap-2">
+                                                    <img src="{{ $image->url }}" alt="{{ $image->alt }}" class="size-16 shrink-0 rounded border border-zinc-200 bg-white object-contain dark:border-zinc-700" loading="lazy" />
+                                                    @if ($image->hasCutout())
+                                                        <img src="{{ route('products.cutout', [$brand, $image]) }}" alt="Cut-out" class="size-16 shrink-0 rounded border border-zinc-200 object-contain dark:border-zinc-700" style="background: repeating-conic-gradient(#e4e4e7 0 25%, #fff 0 50%) 0 0 / 12px 12px" loading="lazy" />
+                                                        <p class="text-xs text-green-700 dark:text-green-400">Cut out</p>
+                                                    @elseif (! in_array($image->id, $wanted, true))
+                                                        <p class="text-xs text-zinc-500 dark:text-zinc-400">Not used by any variant</p>
+                                                    @elseif ($image->cutout_error)
+                                                        <p class="text-xs text-amber-700 dark:text-amber-400">Couldn't be cut out: {{ $image->cutout_error }}</p>
+                                                    @elseif ($remover)
+                                                        <p class="text-xs text-zinc-500 dark:text-zinc-400">Being cut out…</p>
+                                                    @else
+                                                        <p class="text-xs text-zinc-500 dark:text-zinc-400">Not cut out: no service connected</p>
+                                                    @endif
+                                                </div>
                                             @empty
                                                 <p class="text-zinc-500 dark:text-zinc-400">None on the store.</p>
                                             @endforelse
                                         </div>
+                                        @if ($canManage && $remover && $cut['wanted'] > $cut['made'])
+                                            <x-button size="sm" variant="secondary" type="button" wire:click="makeCutouts({{ $product->id }})">{{ $cut['failed'] > 0 ? 'Try the cut-outs again' : 'Make the cut-outs' }}</x-button>
+                                        @endif
                                         @if ($product->url)
                                             <a href="{{ $product->url }}" target="_blank" rel="noopener" class="text-xs underline">Open on the store</a>
                                         @endif
@@ -140,7 +191,7 @@
                         </tr>
                     @endif
                 @empty
-                    <tr><td colspan="4" class="px-4 py-8 text-center text-zinc-500 dark:text-zinc-400">
+                    <tr><td colspan="5" class="px-4 py-8 text-center text-zinc-500 dark:text-zinc-400">
                         @if ($search !== '' || $show !== 'all') Nothing matches. @else No products yet. @if ($store && $canManage) Press "Read the store now". @endif @endif
                     </td></tr>
                 @endforelse

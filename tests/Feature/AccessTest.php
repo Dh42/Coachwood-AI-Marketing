@@ -5,7 +5,7 @@ use App\Auth\Roles;
 use App\Models\User;
 use Illuminate\Support\Facades\Gate;
 
-const BRAND_SCREENS = ['brand-settings'];
+const BRAND_SCREENS = ['brand-settings', 'products', 'brand-kit', 'requests'];
 
 it('shows a no-access page, with only account and sign-out, to someone without a role', function () {
     makeBrand();
@@ -28,7 +28,7 @@ it('lets every role open brand screens, and only admins open platform screens', 
         $this->get(route($screen, $brand))->assertOk();
     }
 
-    foreach (['connections', 'users', 'settings', 'activity', 'scheduled-tasks', 'brands.create'] as $screen) {
+    foreach (['connections', 'platforms', 'models', 'users', 'settings', 'activity', 'scheduled-tasks', 'brands.create'] as $screen) {
         $this->get(route($screen))->assertStatus($platform ? 200 : 403);
     }
 })->with([
@@ -45,7 +45,7 @@ it('gives a brand-only role access to that brand and no other', function () {
 
     $this->get(route('brand-settings', $mine))->assertOk()->assertDontSee('Other');
     $this->get(route('brand-settings', $other))->assertForbidden();
-    $this->get('/')->assertRedirect(route('products', $mine));
+    $this->get('/')->assertRedirect(route('requests', $mine));
 });
 
 it('hides platform screens from the sidebar for non-admins', function () {

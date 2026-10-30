@@ -2,7 +2,7 @@
     @switch($definition->control)
         @case(\App\Settings\SettingControl::Number)
             <div class="flex items-center gap-2">
-                <x-form.input type="number" id="{{ $controlId }}" class="w-28"
+                <x-form.input type="number" id="{{ $controlId }}" class="w-28" step="any"
                               wire:model="{{ $model }}" :min="$definition->min" :max="$definition->max" />
                 @if ($definition->unit)
                     <span class="text-zinc-500 dark:text-zinc-400">{{ $definition->unit }}</span>

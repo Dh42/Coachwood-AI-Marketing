@@ -13,7 +13,7 @@ it('sends signed-in users to the first screen of their current brand', function 
     $brand = makeBrand();
     signInAs(Role::Viewer);
 
-    $this->get('/')->assertRedirect(route('products', $brand));
+    $this->get('/')->assertRedirect(route('requests', $brand));
 });
 
 it('explains there are no brands yet, with a create button for admins', function () {
@@ -32,20 +32,20 @@ it('renders every brand screen inside the app shell', function (string $route) {
         ->assertSee("<title>{$item->label}", escape: false)
         ->assertSee('aria-current="page"', escape: false)
         ->assertSee('Canadian Protein');
-})->with(['products', 'brand-settings']);
+})->with(['requests', 'products', 'brand-kit', 'brand-settings']);
 
 it('renders every platform screen for an admin', function (string $route) {
     signInAs(Role::Admin);
 
     $this->get(route($route))->assertOk()->assertSee('aria-current="page"', escape: false);
-})->with(['connections', 'users', 'settings', 'activity', 'scheduled-tasks']);
+})->with(['connections', 'platforms', 'models', 'users', 'spend', 'settings', 'activity', 'scheduled-tasks']);
 
 it('has a sidebar item for every screen and nothing else', function () {
     $keys = collect(NavSection::cases())
         ->flatMap(fn (NavSection $section) => app(Navigation::class)->section($section)->pluck('key'))
         ->sort()->values()->all();
 
-    expect($keys)->toBe(['activity', 'brand-settings', 'connections', 'products', 'scheduled-tasks', 'settings', 'users']);
+    expect($keys)->toBe(['activity', 'brand-kit', 'brand-settings', 'connections', 'layouts', 'models', 'platforms', 'products', 'prompts', 'requests', 'scheduled-tasks', 'settings', 'spend', 'users']);
 });
 
 it('lists brand screens before platform screens in the sidebar', function () {
@@ -70,7 +70,7 @@ it('remembers the last brand opened', function () {
 
     $this->get(route('brand-settings', $b));
 
-    $this->get('/')->assertRedirect(route('products', $b));
+    $this->get('/')->assertRedirect(route('requests', $b));
 });
 
 it('answers the health check', function () {

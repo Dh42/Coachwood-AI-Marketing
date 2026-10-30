@@ -1,0 +1,18 @@
+{
+    "name": "coachwood/plugin-gemini",
+    "description": "Google Gemini: the Nano Banana image models.",
+    "type": "library",
+    "version": "1.0.0",
+    "autoload": {
+        "psr-4": {
+            "Coachwood\\Plugins\\Gemini\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Coachwood\\Plugins\\Gemini\\GeminiServiceProvider"
+            ]
+        }
+    }
+}

@@ -19,6 +19,12 @@
         </form>
     </section>
 
+    <section id="notices" class="space-y-4">
+        <h2 class="text-base font-semibold">Notices</h2>
+        <p class="text-zinc-600 dark:text-zinc-400">What happens to your requests shows under the bell at the top of every page. Choose what you're emailed about as well.</p>
+        <livewire:settings.settings-form :scope="\App\Settings\SettingScope::User" :scope-id="$user->id" section="Notifications" :titles="false" />
+    </section>
+
     @if ($user->usesPassword())
         <section class="space-y-4">
             <h2 class="text-base font-semibold">Password</h2>

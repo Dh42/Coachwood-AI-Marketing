@@ -82,15 +82,16 @@ it('resets a value so it inherits again', function () {
 });
 
 it('stores secrets encrypted and never sends them back', function () {
-    $this->settings->set('llm.anthropic_api_key', 'sk-ant-secret', SettingScope::Platform, 0, $this->admin);
+    app(SettingsRegistry::class)->define(new SettingDefinition('test.secret', 'A secret', '', SettingControl::Secret, null, rules: ['value' => ['nullable', 'string']]));
+    $this->settings->set('test.secret', 'sk-ant-secret', SettingScope::Platform, 0, $this->admin);
 
-    expect($this->settings->get('llm.anthropic_api_key'))->toBe('sk-ant-secret')
+    expect($this->settings->get('test.secret'))->toBe('sk-ant-secret')
         ->and(Setting::sole()->value)->not->toContain('sk-ant-secret')
         ->and(Activity::where('log_name', 'settings')->sole()->properties->toJson())->not->toContain('sk-ant-secret');
 
     // Blank keeps what's saved.
-    $this->settings->set('llm.anthropic_api_key', '', SettingScope::Platform, 0, $this->admin);
-    expect($this->settings->get('llm.anthropic_api_key'))->toBe('sk-ant-secret');
+    $this->settings->set('test.secret', '', SettingScope::Platform, 0, $this->admin);
+    expect($this->settings->get('test.secret'))->toBe('sk-ant-secret');
 });
 
 it('renders each platform setting with its control on the Settings page', function () {

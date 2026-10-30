@@ -28,9 +28,9 @@ class SettingsForm extends Component
     #[Locked]
     public int $scopeId = 0;
 
-    /** Permission needed to change these settings. Anyone who can open the page can read them. */
+    /** Permission needed to change these settings. Anyone who can open the page can read them. A person's own settings need none: only they can change them. */
     #[Locked]
-    public string $ability;
+    public string $ability = '';
 
     /** Show only this section, when the form is embedded in another screen. */
     #[Locked]
@@ -84,7 +84,7 @@ class SettingsForm extends Component
     #[Locked]
     public bool $batch = false;
 
-    public function mount(SettingScope $scope, string $ability, int $scopeId = 0, ?string $section = null, bool $batch = false, ?array $sections = null, array $except = [], bool $platformOnly = false, bool $titles = true): void
+    public function mount(SettingScope $scope, string $ability = '', int $scopeId = 0, ?string $section = null, bool $batch = false, ?array $sections = null, array $except = [], bool $platformOnly = false, bool $titles = true): void
     {
         $this->titles = $titles;
         $this->platformOnly = $platformOnly;
@@ -101,7 +101,7 @@ class SettingsForm extends Component
 
     public function save(string $field, Settings $settings): void
     {
-        $this->authorize($this->ability, $this->brand());
+        abort_unless($this->canEdit(), 403);
 
         $definition = $this->definition($field);
 
@@ -128,7 +128,7 @@ class SettingsForm extends Component
      */
     public function saveAll(array $fields, Settings $settings): bool
     {
-        $this->authorize($this->ability, $this->brand());
+        abort_unless($this->canEdit(), 403);
 
         $definitions = collect($fields)->unique()->mapWithKeys(fn ($field) => [(string) $field => $this->definition((string) $field)]);
         $this->resetErrorBag();
@@ -167,7 +167,7 @@ class SettingsForm extends Component
 
     public function resetToDefault(string $field, Settings $settings): void
     {
-        $this->authorize($this->ability, $this->brand());
+        abort_unless($this->canEdit(), 403);
 
         $definition = $this->definition($field);
         $settings->reset($definition->key, $this->scope, $this->scopeId, Auth::user());
@@ -218,7 +218,7 @@ class SettingsForm extends Component
     {
         return view('livewire.settings.settings-form', [
             'canPlatform' => $this->scope === SettingScope::Brand && Auth::user()->can('settings.manage'),
-            'readOnly' => ! Auth::user()->can($this->ability, $this->brand()),
+            'readOnly' => ! $this->canEdit(),
             'grouped' => $registry->settableAt($this->scope)
                 ->filter(fn (SettingDefinition $d) => $this->shows($d))
                 ->map(fn (SettingDefinition $d) => [
@@ -228,6 +228,17 @@ class SettingsForm extends Component
                 ])
                 ->groupBy(fn ($row) => $row['resolved']->definition->section),
         ]);
+    }
+
+    /**
+     * Whether the person may change these settings: their own, or the
+     * permission the page names.
+     */
+    private function canEdit(): bool
+    {
+        return $this->scope === SettingScope::User
+            ? Auth::id() === $this->scopeId
+            : (bool) Auth::user()?->can($this->ability, $this->brand());
     }
 
     /**

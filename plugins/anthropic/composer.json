@@ -1,0 +1,18 @@
+{
+    "name": "coachwood/plugin-anthropic",
+    "description": "Anthropic: the Claude models that plan, write the prompts and copy, and review.",
+    "type": "library",
+    "version": "1.0.0",
+    "autoload": {
+        "psr-4": {
+            "Coachwood\\Plugins\\Anthropic\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Coachwood\\Plugins\\Anthropic\\AnthropicServiceProvider"
+            ]
+        }
+    }
+}
